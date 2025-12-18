@@ -14,7 +14,6 @@ export function Footer() {
     Company: [
       { name: "About Us", href: "/about" },
       { name: "Contact", href: "/contact" },
-      { name: "Admin Panel", href: "/admin" },
     ],
     Support: [
       { name: "Customer Service", href: "/contact" },

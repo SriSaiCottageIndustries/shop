@@ -13,7 +13,6 @@ const navLinks = [
   { name: "Categories", href: "/categories" },
   { name: "About", href: "/about" },
   { name: "Contact", href: "/contact" },
-  { name: "Admin", href: "/admin", className: "text-[#FF9933]" },
 ]
 
 
