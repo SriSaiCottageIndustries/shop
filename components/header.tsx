@@ -8,7 +8,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/lib/cart-context"
 
-const navLinks = [
+const navLinks: { name: string; href: string; className?: string }[] = [
   { name: "Products", href: "/products" },
   { name: "Categories", href: "/categories" },
   { name: "About", href: "/about" },
