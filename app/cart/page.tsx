@@ -45,21 +45,33 @@ export default function CartPage() {
                     </div>
                     <div className="flex-1 pr-4 sm:pr-10">
                       <div className="flex justify-between items-start">
-                        <h3 className="text-lg font-bold text-[#2C1810] mb-2">{item.name}</h3>
+                        <h3 className="text-lg font-bold text-[#2C1810] mb-1">{item.name}</h3>
                         <button
-                          onClick={() => removeItem(item.id)}
+                          onClick={() => removeItem(item.id, item.selectedVariants)}
                           className="text-red-400 hover:text-red-600 transition-colors p-1.5 hover:bg-red-50 rounded-full -mt-1 -mr-2 sm:mr-0"
                           title="Remove Item"
                         >
                           <Trash2 size={18} />
                         </button>
                       </div>
+
+                      {/* Variants Display */}
+                      {item.selectedVariants && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {Object.entries(item.selectedVariants).map(([key, val]) => (
+                            <span key={key} className="text-xs text-[#8B4513] bg-[#FFF8F0] px-2 py-0.5 rounded border border-[#D7CCC8]">
+                              {val}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
                       <p className="text-[#8B4513] font-bold">{item.price}</p>
                     </div>
 
                     <div className="flex flex-col sm:items-end justify-between mt-4 sm:mt-0">
                       <div className="flex items-center gap-3 bg-[#EFEBE9] rounded-full px-4 py-1.5 self-start sm:self-auto mt-2 sm:mt-0">
-                        <button onClick={() => { if (item.quantity > 1) updateQuantity(item.id, item.quantity - 1); else removeItem(item.id) }} className="text-[#8B4513] hover:bg-black/5 rounded-full p-1" title="Decrease">
+                        <button onClick={() => { if (item.quantity > 1) updateQuantity(item.id, item.quantity - 1, item.selectedVariants); else removeItem(item.id, item.selectedVariants) }} className="text-[#8B4513] hover:bg-black/5 rounded-full p-1" title="Decrease">
                           <Minus size={14} />
                         </button>
                         <span className="w-4 text-center font-medium text-[#2C1810] text-sm">{item.quantity}</span>

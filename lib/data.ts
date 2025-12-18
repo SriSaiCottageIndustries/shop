@@ -6,8 +6,9 @@ export interface Product {
     images: string[]
     badge?: string
     tagline?: string
-    description: string
+    description?: string // Made optional to match shop-context
     category: string
+    variants?: { type: string, options: string[] }[]
     swatches?: { name: string; color: string }[]
 }
 

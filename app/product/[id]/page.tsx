@@ -11,6 +11,7 @@ import { Footer } from "@/components/footer"
 import { useShop } from "@/lib/shop-context"
 import { Product } from "@/lib/data"
 import { toast } from "sonner"
+import { LoadingAnimation } from "@/components/ui/loading-animation"
 
 
 
@@ -23,6 +24,8 @@ export default function ProductPage() {
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
     const [activeImage, setActiveImage] = useState(0)
     const [quantity, setQuantity] = useState(1)
+    // Changed to store array of strings for multi-select
+    const [selectedVariants, setSelectedVariants] = useState<Record<string, string[]>>({})
 
     useEffect(() => {
         if (params.id && products.length > 0) {
@@ -31,26 +34,102 @@ export default function ProductPage() {
                 setProduct(found)
                 const related = products.filter(p => p.category === found.category && p.id !== found.id).slice(0, 3)
                 setRelatedProducts(related)
+                // Reset selection when product changes
+                setSelectedVariants({})
+                setQuantity(1)
             }
         }
     }, [params.id, products])
 
-    if (!product) return <div className="min-h-screen flex items-center justify-center bg-[#FFF8DC]">Loading...</div>
+    // Loading check moved to top import
+
+    if (!product) return (
+        <div className="min-h-screen flex items-center justify-center bg-[#FFF8DC]">
+            <LoadingAnimation />
+        </div>
+    )
+
+    // Helper to toggle variant selection
+    const toggleVariant = (type: string, option: string) => {
+        setSelectedVariants(prev => {
+            const current = prev[type] || []
+            const exists = current.includes(option)
+
+            let updated: string[]
+            if (exists) {
+                updated = current.filter(o => o !== option)
+            } else {
+                updated = [...current, option]
+            }
+
+            return { ...prev, [type]: updated }
+        })
+    }
+
+    // Helper to generate all combinations of selected variants
+    const generateCombinations = (variants: Record<string, string[]>): Record<string, string>[] => {
+        const keys = Object.keys(variants)
+        if (keys.length === 0) return []
+
+        // If any key has empty selection, return empty (incomplete selection)
+        if (keys.some(k => !variants[k] || variants[k].length === 0)) return []
+
+        const [firstKey, ...restKeys] = keys
+        const firstOptions = variants[firstKey]
+
+        let combinations: Record<string, string>[] = firstOptions.map(opt => ({ [firstKey]: opt }))
+
+        for (const key of restKeys) {
+            const temp: Record<string, string>[] = []
+            for (const combo of combinations) {
+                for (const opt of variants[key]) {
+                    temp.push({ ...combo, [key]: opt })
+                }
+            }
+            combinations = temp
+        }
+        return combinations
+    }
+
+    const combinations = product.variants ? generateCombinations(selectedVariants) : []
+    const totalQuantityToAdd = product.variants ? combinations.length * quantity : quantity
 
     const handleAddToCart = () => {
-        // Add item multiple times based on quantity
-        // Since our context doesn't support 'add quantity' directly yet in one call properly without looping or updating context
-        // We will just call addItem once for now, or loop. The user complained count isn't showing.
-        // Let's loop for now to be safe with current context implementation
-        for (let i = 0; i < quantity; i++) {
-            addItem({
-                id: product.id,
-                name: product.name,
-                price: product.price,
-                image: product.images[0]
-            })
+        // Validate variants
+        if (product.variants && product.variants.length > 0) {
+            const missing = product.variants.some((v) => !selectedVariants[v.type] || selectedVariants[v.type].length === 0)
+            if (missing) {
+                toast.error("Please select at least one option for each type")
+                return
+            }
         }
-        toast.success(`Added ${quantity} ${product.name} to cart`)
+
+        if (product.variants && product.variants.length > 0) {
+            // Add each combination
+            combinations.forEach(combo => {
+                for (let i = 0; i < quantity; i++) {
+                    addItem({
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        image: product.images[0],
+                        selectedVariants: combo
+                    })
+                }
+            })
+        } else {
+            // Simple product (no variants)
+            for (let i = 0; i < quantity; i++) {
+                addItem({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    image: product.images[0]
+                })
+            }
+        }
+
+        toast.success(`Added ${totalQuantityToAdd} items to cart`)
     }
 
     return (
@@ -112,6 +191,45 @@ export default function ProductPage() {
                             )}
                         </div>
 
+                        {/* Variant Selection */}
+                        {product.variants && product.variants.length > 0 && (
+                            <div className="space-y-4 mb-8 bg-[#FFF8F0] p-4 rounded-xl border border-[#D7CCC8]/50">
+                                {product.variants.map((v, idx) => (
+                                    <div key={idx}>
+                                        <h3 className="text-sm font-bold text-[#6D4C41] mb-2 uppercase tracking-wide flex justify-between">
+                                            {v.type}
+                                            <span className="text-xs normal-case opacity-70">Select multiple if needed</span>
+                                        </h3>
+                                        <div className="flex flex-wrap gap-2">
+                                            {v.options.map((opt: string) => {
+                                                const isSelected = selectedVariants[v.type]?.includes(opt)
+                                                return (
+                                                    <button
+                                                        key={opt}
+                                                        onClick={() => toggleVariant(v.type, opt)}
+                                                        className={`px-4 py-2 rounded-lg border-2 transition-all font-medium ${isSelected
+                                                            ? "border-[#FF9933] bg-[#FF9933] text-white shadow-md relative pl-8"
+                                                            : "border-[#D7CCC8] bg-white text-[#6D4C41] hover:border-[#FF9933] hover:text-[#FF9933]"
+                                                            }`}
+                                                    >
+                                                        {isSelected && <span className="absolute left-2 top-1/2 -translate-y-1/2 text-white">✓</span>}
+                                                        {opt}
+                                                    </button>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
+                                {/* Validation Error Message */}
+                                {product.variants.some((v) => !selectedVariants[v.type] || selectedVariants[v.type].length === 0) && (
+                                    <p className="text-xs text-[#8B4513] flex items-center gap-1">
+                                        <span className="inline-block w-1 h-1 rounded-full bg-[#FF9933]"></span>
+                                        Please select at least one option for each type
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         <div className="text-[#6D4C41] text-lg leading-relaxed mb-8 whitespace-pre-line">
                             {product.description}
                         </div>
@@ -130,11 +248,23 @@ export default function ProductPage() {
                                 </div>
                             </div>
 
+                            {/* Summary Text on Button Context */}
+                            {product.variants && combinations.length > 0 && (
+                                <p className="text-sm font-bold text-[#8B4513] text-center">
+                                    {combinations.length} types selected x {quantity} qty = {totalQuantityToAdd} items total
+                                </p>
+                            )}
+
                             <button
                                 onClick={handleAddToCart}
-                                className="w-full bg-[#FF9933] text-white py-4 rounded-full font-bold text-xl hover:bg-[#DAA520] transition-transform active:scale-[0.98] shadow-lg flex items-center justify-center gap-3"
+                                disabled={product.variants && product.variants.some((v) => !selectedVariants[v.type] || selectedVariants[v.type].length === 0)}
+                                className="w-full bg-[#FF9933] text-white py-4 rounded-full font-bold text-xl hover:bg-[#DAA520] transition-transform active:scale-[0.98] shadow-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <ShoppingCart size={24} /> Add to Cart
+                                <ShoppingCart size={24} />
+                                {product.variants && product.variants.some((v) => !selectedVariants[v.type] || selectedVariants[v.type].length === 0)
+                                    ? "Select Options"
+                                    : `Add ${totalQuantityToAdd > 1 ? totalQuantityToAdd + " Items" : "to Cart"}`
+                                }
                             </button>
                         </div>
                     </div>

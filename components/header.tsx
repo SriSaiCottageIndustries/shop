@@ -97,7 +97,7 @@ export function Header() {
               asChild
             >
               <Link href="/cart" aria-label="Shopping cart" className="relative group">
-                <ShoppingCart className="h-7 w-7 text-[#5D4037] group-hover:text-[#8B4513] transition-colors" />
+                <ShoppingCart className="h-6 w-6 text-[#5D4037] group-hover:text-[#8B4513] transition-colors" />
                 <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#8B4513] text-[10px] font-bold text-white shadow-sm ring-1 ring-white">
                   {cartCount}
                 </span>

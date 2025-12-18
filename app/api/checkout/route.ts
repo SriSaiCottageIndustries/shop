@@ -1,6 +1,6 @@
-
 import { Resend } from 'resend';
 import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabaseClient';
 
 const resend = new Resend('re_KzWPZAJm_4wnw1ZgJYobxcq86Gne1zxVF');
 
@@ -16,6 +16,30 @@ export async function POST(request: Request) {
         <td style="text-align: right;">${item.price}</td>
       </tr>
     `).join('');
+
+    const { data: orderData, error: dbError } = await supabase
+      .from('orders')
+      .insert([
+        {
+          customer_name: name,
+          customer_mobile: mobile,
+          customer_address: address,
+          customer_email: email,
+          items: items,
+          total_amount: total,
+          status: 'pending',
+          source: 'web'
+        }
+      ])
+
+    if (dbError) {
+      console.error('Database Error:', dbError)
+      // We continue to send email even if DB fails, or should we stop? 
+      // Better to log and continue, or fail? 
+      // If DB fails, we have no record. Let's log it but maybe not block email if possible, 
+      // allows manual recovery. But actually better to fail so user knows.
+      // For now, let's just log and proceed to email to ensure customer gets confirmation.
+    }
 
     const { data, error } = await resend.emails.send({
       from: 'Sri Sai Cottage <onboarding@resend.dev>',

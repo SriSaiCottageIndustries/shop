@@ -9,13 +9,14 @@ export type CartItem = {
     price: string
     image: string
     quantity: number
+    selectedVariants?: Record<string, string>
 }
 
 type CartContextType = {
     items: CartItem[]
     addItem: (item: Omit<CartItem, "quantity">) => void
-    removeItem: (id: string) => void
-    updateQuantity: (id: string, quantity: number) => void
+    removeItem: (id: string, selectedVariants?: Record<string, string>) => void
+    updateQuantity: (id: string, quantity: number, selectedVariants?: Record<string, string>) => void
     clearCart: () => void
     cartCount: number
     cartTotal: number
@@ -38,6 +39,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
     }, [])
 
+    // Helper to compare variants irrespective of key order
+    const areVariantsEqual = (v1?: Record<string, string>, v2?: Record<string, string>) => {
+        if (!v1 && !v2) return true
+        if (!v1 || !v2) return false
+        const keys1 = Object.keys(v1).sort()
+        const keys2 = Object.keys(v2).sort()
+        if (keys1.length !== keys2.length) return false
+        if (!keys1.every((k, i) => k === keys2[i])) return false
+        return keys1.every(k => v1[k] === v2[k])
+    }
+
     // Save cart to localStorage whenever it changes
     useEffect(() => {
         localStorage.setItem("cart", JSON.stringify(items))
@@ -51,25 +63,38 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
 
         setItems((prev) => {
-            const existing = prev.find((i) => i.id === item.id)
-            if (existing) {
+            // Check for existing item with SAME ID and SAME VARIANTS
+            const existingIndex = prev.findIndex((i) => {
+                const sameId = i.id === item.id;
+                return sameId && areVariantsEqual(i.selectedVariants, item.selectedVariants);
+            })
+
+            if (existingIndex > -1) {
                 console.log("Updating quantity for existing item")
-                return prev.map((i) =>
-                    i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-                )
+                const newItems = [...prev]
+                newItems[existingIndex].quantity += 1
+                return newItems
             }
             console.log("Adding new item")
             return [...prev, { ...item, quantity: 1 }]
         })
     }
 
-    const removeItem = (id: string) => {
-        setItems((prev) => prev.filter((i) => i.id !== id))
+    const removeItem = (id: string, selectedVariants?: Record<string, string>) => {
+        setItems((prev) => prev.filter((i) => {
+            // Keep item if ID is different OR Variants are different
+            const sameId = i.id === id;
+            const sameVariants = areVariantsEqual(i.selectedVariants, selectedVariants);
+            return !(sameId && sameVariants);
+        }))
     }
 
-    const updateQuantity = (id: string, quantity: number) => {
+    const updateQuantity = (id: string, quantity: number, selectedVariants?: Record<string, string>) => {
         setItems((prev) => prev.map((item) => {
-            if (item.id === id) {
+            const sameId = item.id === id;
+            const sameVariants = areVariantsEqual(item.selectedVariants, selectedVariants);
+
+            if (sameId && sameVariants) {
                 return { ...item, quantity: Math.max(0, quantity) }
             }
             return item
@@ -84,7 +109,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const cartCount = items.reduce((acc, item) => acc + item.quantity, 0)
 
     const cartTotal = items.reduce((acc, item) => {
-        const price = parseFloat(item.price.replace(/[^0-9.]/g, ""))
+        const priceStr = item.price ? String(item.price) : "0"
+        const price = parseFloat(priceStr.replace(/[^0-9.]/g, ""))
         return acc + price * item.quantity
     }, 0)
 

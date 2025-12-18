@@ -1,9 +1,24 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect } from "react"
-import { Product } from "./data"
+// import { Product } from "./data" // Removed to avoid conflict
 import { supabase } from "./supabaseClient"
 import { toast } from "sonner"
+
+export interface Product {
+    id: string
+    name: string
+    price: string
+    originalPrice?: string
+    images: string[]
+    badge?: string
+    materials?: string[]
+    tagline?: string
+    description?: string
+    category: string
+    variants?: { type: string, options: string[] }[]
+    swatches?: { name: string; color: string }[]
+}
 
 export interface Category {
     id: string
@@ -45,27 +60,6 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
             if (productsError) throw productsError
             if (categoriesError) throw categoriesError
 
-            // Map DB fields if necessary (DB uses snake_case usually, but we define types)
-            // Assuming DB columns match or we map them. 
-            // In schema.sql provided: original_price (snake), category_id
-            // In frontend: originalPrice (camel), category string
-
-            const formattedProducts: Product[] = (productsData || []).map((p: any) => ({
-                id: p.id.toString(),
-                name: p.name,
-                price: p.price.toString(),
-                originalPrice: p.original_price?.toString(),
-                images: p.images || [],
-                badge: p.badge,
-                materials: p.materials || [],
-                tagline: p.tagline,
-                description: p.description,
-                category: p.category || "", // Text category
-                swatches: [] // Not in DB schema yet, default empty
-            }))
-
-            setProducts(formattedProducts)
-
             const formattedCategories: Category[] = (categoriesData || []).map((c: any) => ({
                 id: c.id.toString(),
                 name: c.name,
@@ -73,6 +67,32 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
             }))
 
             setCategories(formattedCategories)
+
+            // Map DB fields if necessary (DB uses snake_case usually, but we define types)
+            // Assuming DB columns match or we map them. 
+            // In schema.sql provided: original_price (snake), category_id
+            // In frontend: originalPrice (camel), category string
+
+            const formattedProducts: Product[] = (productsData || []).map((p: any) => {
+                // Find category name from ID
+                const cat = formattedCategories.find(c => c.id === p.category_id?.toString())
+                return {
+                    id: p.id.toString(),
+                    name: p.name,
+                    price: p.price.toString(),
+                    originalPrice: p.original_price?.toString(),
+                    images: p.images || [],
+                    badge: p.badge,
+                    materials: p.materials || [],
+                    tagline: p.tagline,
+                    description: p.description,
+                    category: cat ? cat.name : (p.category || ""), // Use name from ID, or fallback
+                    variants: p.variants || [],
+                    swatches: [] // Not in DB schema yet, default empty
+                }
+            })
+
+            setProducts(formattedProducts)
             setIsLoaded(true)
         } catch (error) {
             console.error("Error fetching data:", error)
@@ -91,6 +111,10 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
             // Optimistic update
             setProducts(prev => [product, ...prev])
 
+            // Find category ID
+            const cat = categories.find(c => c.name === product.category)
+            const categoryId = cat ? parseInt(cat.id) : null
+
             const { error } = await supabase.from('products').insert({
                 name: product.name,
                 price: parseFloat(product.price),
@@ -100,7 +124,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
                 materials: product.materials,
                 tagline: product.tagline,
                 description: product.description,
-                category: product.category
+                category_id: categoryId, // Send ID, not name
+                variants: product.variants
             })
 
             if (error) throw error
@@ -117,6 +142,10 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         try {
             setProducts(prev => prev.map(p => p.id === id ? updatedProduct : p))
 
+            // Find category ID
+            const cat = categories.find(c => c.name === updatedProduct.category)
+            const categoryId = cat ? parseInt(cat.id) : null
+
             const { error } = await supabase.from('products').update({
                 name: updatedProduct.name,
                 price: parseFloat(updatedProduct.price),
@@ -126,7 +155,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
                 materials: updatedProduct.materials,
                 tagline: updatedProduct.tagline,
                 description: updatedProduct.description,
-                category: updatedProduct.category
+                category_id: categoryId,
+                variants: updatedProduct.variants
             }).eq('id', id)
 
             if (error) throw error
