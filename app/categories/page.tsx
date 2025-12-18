@@ -3,10 +3,6 @@
 import { Header } from "@/components/header"
 import { motion } from "framer-motion"
 import { Reveal } from "@/components/reveal"
-
-import { Header } from "@/components/header"
-import { motion } from "framer-motion"
-import { Reveal } from "@/components/reveal"
 import { useShop } from "@/lib/shop-context"
 
 export default function CategoriesPage() {
