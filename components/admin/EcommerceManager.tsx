@@ -39,11 +39,12 @@ export function EcommerceManager({ onBack }: EcommerceManagerProps) {
         originalPrice: "",
         images: [] as string[],
         badge: "",
+        badgeColor: "",
         materials: "",
         tagline: "",
         description: "",
         category: "",
-        variants: [] as { type: string, options: string[] }[]
+        variants: [] as { type: string, options: (string | { label: string, price?: string, originalPrice?: string })[] }[]
     })
 
     useEffect(() => {
@@ -155,7 +156,7 @@ export function EcommerceManager({ onBack }: EcommerceManagerProps) {
     }
 
     const resetForm = () => {
-        setFormData({ id: "", name: "", price: "", originalPrice: "", images: [], badge: "", materials: "", tagline: "", description: "", category: "", variants: [] })
+        setFormData({ id: "", name: "", price: "", originalPrice: "", images: [], badge: "", badgeColor: "", materials: "", tagline: "", description: "", category: "", variants: [] })
     }
 
     return (
@@ -294,6 +295,26 @@ export function EcommerceManager({ onBack }: EcommerceManagerProps) {
                                     {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                                 </select>
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-[#5D4037] mb-1">Badge (Optional)</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        placeholder="e.g. Bestseller, New"
+                                        value={formData.badge}
+                                        onChange={e => setFormData({ ...formData, badge: e.target.value })}
+                                        className="w-full p-2 border rounded focus:ring-2 focus:ring-[#8B4513] focus:outline-none"
+                                    />
+                                    <div className="relative">
+                                        <input
+                                            type="color"
+                                            value={formData.badgeColor || "#8B4513"}
+                                            onChange={e => setFormData({ ...formData, badgeColor: e.target.value })}
+                                            className="h-10 w-10 p-1 rounded cursor-pointer border"
+                                            title="Badge Background Color"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium mb-1">Product Images (Upload or URL)</label>
                                 <div className="flex gap-2 mb-2">
@@ -359,48 +380,126 @@ export function EcommerceManager({ onBack }: EcommerceManagerProps) {
                                 <h3 className="font-bold text-[#2C1810] mb-2 flex items-center gap-2">
                                     <Layers size={18} /> Variants (e.g. Size, Color)
                                 </h3>
-                                <p className="text-xs text-gray-500 mb-3">Add options like Size (S, M, L) or Color (Red, Blue) so customers can choose.</p>
+                                <p className="text-xs text-gray-500 mb-3">Add options. If you want different prices for options, enter the price value.</p>
 
                                 {formData.variants && formData.variants.map((v: any, idx: number) => (
-                                    <div key={idx} className="flex gap-2 mb-2 items-start bg-white p-2 rounded shadow-sm">
-                                        <div className="flex-1">
+                                    <div key={idx} className="mb-4 bg-white p-3 rounded shadow-sm border border-orange-100">
+                                        <div className="flex justify-between items-center mb-2">
                                             <input
-                                                placeholder="Type (e.g. Color)"
+                                                placeholder="Type (e.g. Size)"
                                                 value={v.type}
                                                 onChange={e => {
                                                     const newVariants = [...(formData.variants || [])]
                                                     newVariants[idx].type = e.target.value
                                                     setFormData({ ...formData, variants: newVariants })
                                                 }}
-                                                className="w-full p-2 border rounded text-sm mb-1"
+                                                className="font-bold text-[#2C1810] p-1 border-b border-dashed border-[#8B4513] focus:outline-none focus:border-solid bg-transparent"
                                             />
-                                        </div>
-                                        <div className="flex-[2]">
-                                            <input
-                                                placeholder="Options (comma separated, e.g. Red, Blue)"
-                                                value={v.options.join(", ")}
-                                                onChange={e => {
+                                            <button
+                                                onClick={() => {
                                                     const newVariants = [...(formData.variants || [])]
-                                                    newVariants[idx].options = e.target.value.split(",").map((s: string) => s.trim())
+                                                    newVariants.splice(idx, 1)
                                                     setFormData({ ...formData, variants: newVariants })
                                                 }}
-                                                className="w-full p-2 border rounded text-sm"
-                                            />
+                                                className="text-red-500 hover:bg-red-50 p-1 rounded"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
                                         </div>
-                                        <button
-                                            onClick={() => {
-                                                const newVariants = [...(formData.variants || [])]
-                                                newVariants.splice(idx, 1)
-                                                setFormData({ ...formData, variants: newVariants })
-                                            }}
-                                            className="text-red-500 p-2 hover:bg-red-50 rounded"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
+
+                                        <div className="space-y-2">
+                                            {v.options.map((opt: any, optIdx: number) => {
+                                                const label = typeof opt === 'string' ? opt : opt.label
+                                                const price = typeof opt === 'string' ? '' : opt.price || ''
+
+                                                return (
+                                                    <div key={optIdx} className="flex gap-2 items-center">
+                                                        <input
+                                                            className="flex-1 p-2 border rounded text-sm min-w-0"
+                                                            placeholder="Option Label (e.g. Small)"
+                                                            value={label}
+                                                            onChange={(e) => {
+                                                                const newVariants = [...formData.variants]
+                                                                const currentOptions = [...newVariants[idx].options]
+                                                                // Convert to object if it was string
+                                                                const currentOpt = currentOptions[optIdx]
+                                                                const currentPrice = typeof currentOpt === 'string' ? '' : currentOpt.price
+
+                                                                currentOptions[optIdx] = { label: e.target.value, price: currentPrice }
+                                                                newVariants[idx].options = currentOptions
+                                                                setFormData({ ...formData, variants: newVariants })
+                                                            }}
+                                                        />
+                                                        <div className="relative w-24 flex-shrink-0">
+                                                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">₹</span>
+                                                            <input
+                                                                className="w-full pl-5 p-2 border rounded text-sm"
+                                                                placeholder="Price"
+                                                                value={price}
+                                                                onChange={(e) => {
+                                                                    const newVariants = [...formData.variants]
+                                                                    const currentOptions = [...newVariants[idx].options]
+                                                                    // Convert to object
+                                                                    const currentOpt = currentOptions[optIdx]
+                                                                    const currentLabel = typeof currentOpt === 'string' ? currentOpt : currentOpt.label
+                                                                    const currentOriginalPrice = typeof currentOpt === 'string' ? '' : currentOpt.originalPrice
+
+                                                                    currentOptions[optIdx] = { label: currentLabel, price: e.target.value, originalPrice: currentOriginalPrice }
+                                                                    newVariants[idx].options = currentOptions
+                                                                    setFormData({ ...formData, variants: newVariants })
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div className="relative w-24 flex-shrink-0">
+                                                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">MRP</span>
+                                                            <input
+                                                                className="w-full pl-10 p-2 border rounded text-sm bg-gray-50"
+                                                                placeholder=""
+                                                                value={typeof opt === 'string' ? '' : opt.originalPrice || ''}
+                                                                onChange={(e) => {
+                                                                    const newVariants = [...formData.variants]
+                                                                    const currentOptions = [...newVariants[idx].options]
+
+                                                                    const currentOpt = currentOptions[optIdx]
+                                                                    const currentLabel = typeof currentOpt === 'string' ? currentOpt : currentOpt.label
+                                                                    const currentPrice = typeof currentOpt === 'string' ? '' : currentOpt.price
+
+                                                                    currentOptions[optIdx] = { label: currentLabel, price: currentPrice, originalPrice: e.target.value }
+                                                                    newVariants[idx].options = currentOptions
+                                                                    setFormData({ ...formData, variants: newVariants })
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <button
+                                                            onClick={() => {
+                                                                const newVariants = [...formData.variants]
+                                                                const currentOptions = [...newVariants[idx].options]
+                                                                currentOptions.splice(optIdx, 1)
+                                                                newVariants[idx].options = currentOptions
+                                                                setFormData({ ...formData, variants: newVariants })
+                                                            }}
+                                                            className="text-gray-400 hover:text-red-500"
+                                                        >
+                                                            <X size={16} />
+                                                        </button>
+                                                    </div>
+                                                )
+                                            })}
+                                            <button
+                                                onClick={() => {
+                                                    const newVariants = [...formData.variants]
+                                                    newVariants[idx].options.push({ label: "", price: "" })
+                                                    setFormData({ ...formData, variants: newVariants })
+                                                }}
+                                                className="text-xs text-[#FF9933] font-bold hover:underline flex items-center gap-1 mt-2"
+                                            >
+                                                <Plus size={12} /> Add Option
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                                 <button
-                                    onClick={() => setFormData({ ...formData, variants: [...(formData.variants || []), { type: "", options: [] }] })}
+                                    onClick={() => setFormData({ ...formData, variants: [...(formData.variants || []), { type: "Size", options: [] }] })}
                                     className="text-sm bg-[#2C1810] text-white px-3 py-2 rounded hover:bg-[#4E342E] flex items-center gap-2"
                                 >
                                     <Plus size={14} /> Add Variant Type
@@ -448,12 +547,11 @@ export function EcommerceManager({ onBack }: EcommerceManagerProps) {
                                         {product.category && <span className="bg-[#EFEBE9] text-[#6D4C41] px-2 py-0.5 rounded text-xs font-semibold">{product.category}</span>}
                                     </div>
 
-                                    {/* Display Variants in List */}
                                     {product.variants && product.variants.length > 0 && (
                                         <div className="flex gap-2 mb-2 flex-wrap">
                                             {product.variants.map((v: any, i: number) => (
                                                 <span key={i} className="text-xs bg-gray-100 border px-2 py-1 rounded text-gray-700">
-                                                    <strong>{v.type}:</strong> {v.options.join(", ")}
+                                                    <strong>{v.type}:</strong> {v.options.map((o: any) => typeof o === 'string' ? o : `${o.label}${o.price ? `(₹${o.price})` : ''}${o.originalPrice ? `[MRP: ₹${o.originalPrice}]` : ''}`).join(", ")}
                                                 </span>
                                             ))}
                                         </div>

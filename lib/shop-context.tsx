@@ -5,6 +5,12 @@ import { createContext, useContext, useState, useEffect } from "react"
 import { supabase } from "./supabaseClient"
 import { toast } from "sonner"
 
+export interface VariantOption {
+    label: string
+    price?: string
+    originalPrice?: string
+}
+
 export interface Product {
     id: string
     name: string
@@ -12,11 +18,12 @@ export interface Product {
     originalPrice?: string
     images: string[]
     badge?: string
+    badgeColor?: string
     materials?: string[]
     tagline?: string
     description?: string
     category: string
-    variants?: { type: string, options: string[] }[]
+    variants?: { type: string, options: (string | VariantOption)[] }[]
     swatches?: { name: string; color: string }[]
 }
 
@@ -83,6 +90,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
                     originalPrice: p.original_price?.toString(),
                     images: p.images || [],
                     badge: p.badge,
+                    badgeColor: p.badge_color,
                     materials: p.materials || [],
                     tagline: p.tagline,
                     description: p.description,
@@ -121,6 +129,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
                 original_price: product.originalPrice ? parseFloat(product.originalPrice) : null,
                 images: product.images,
                 badge: product.badge,
+                badge_color: product.badgeColor,
                 materials: product.materials,
                 tagline: product.tagline,
                 description: product.description,
@@ -152,6 +161,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
                 original_price: updatedProduct.originalPrice ? parseFloat(updatedProduct.originalPrice) : null,
                 images: updatedProduct.images,
                 badge: updatedProduct.badge,
+                badge_color: updatedProduct.badgeColor,
                 materials: updatedProduct.materials,
                 tagline: updatedProduct.tagline,
                 description: updatedProduct.description,

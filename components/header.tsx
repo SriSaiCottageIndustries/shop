@@ -92,13 +92,12 @@ export function Header() {
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
-              size="icon"
-              className="relative overflow-visible"
+              className="relative overflow-visible w-24 h-24 rounded-full hover:bg-orange-50 p-0"
               asChild
             >
-              <Link href="/cart" aria-label="Shopping cart" className="relative group">
-                <ShoppingCart className="h-8 w-8 text-[#5D4037] group-hover:text-[#8B4513] transition-colors" />
-                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#8B4513] text-[10px] font-bold text-white shadow-sm ring-1 ring-white">
+              <Link href="/cart" aria-label="Shopping cart" className="relative group flex items-center justify-center">
+                <ShoppingCart className="h-16 w-16 text-[#5D4037] group-hover:text-[#8B4513] transition-colors" />
+                <span className="absolute top-2 right-4 flex h-5 w-5 items-center justify-center rounded-full bg-[#8B4513] text-[10px] font-bold text-white shadow-md ring-1 ring-white">
                   {cartCount}
                 </span>
               </Link>

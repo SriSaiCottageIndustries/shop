@@ -1,49 +1,9 @@
-"use client"
-
 import { useRef } from "react"
 import { motion, useScroll, useTransform } from "framer-motion"
 import Image from "next/image"
 import Link from "next/link"
 import { Reveal } from "./reveal"
-
-const collections = [
-  {
-    id: "brass-idols",
-    name: "BRASS IDOLS",
-    image: "/brass-hindu-deity-idols.jpg",
-    count: "12 items",
-  },
-  {
-    id: "pooja-thalis",
-    name: "POOJA THALIS",
-    image: "/brass-pooja-thali-sets.jpg",
-    count: "8 items",
-  },
-  {
-    id: "incense-dhoop",
-    name: "INCENSE & DHOOP",
-    image: "/agarbatti-incense-sticks.jpg",
-    count: "15 items",
-  },
-  {
-    id: "diya-lamps",
-    name: "DIYA & LAMPS",
-    image: "/brass-oil-diya-lamps.jpg",
-    count: "10 items",
-  },
-  {
-    id: "bells-ghanti",
-    name: "BELLS & GHANTI",
-    image: "/brass-temple-bells.jpg",
-    count: "6 items",
-  },
-  {
-    id: "puja-accessories",
-    name: "PUJA ACCESSORIES",
-    image: "/pooja-ritual-items.jpg",
-    count: "18 items",
-  },
-]
+import { useShop } from "@/lib/shop-context"
 
 export function CollectionStrip() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -51,13 +11,32 @@ export function CollectionStrip() {
     target: containerRef,
     offset: ["start end", "end start"],
   })
+  const { categories, products } = useShop()
+
+  // Calculate dynamic collections with product counts
+  const displayCollections = categories.map(cat => {
+    const count = products.filter(p => p.category === cat.name).length
+    return {
+      id: cat.id,
+      name: cat.name,
+      image: cat.image,
+      count: `${count} item${count !== 1 ? 's' : ''}`
+    }
+  })
+
+  // Fallback if no categories (during initial load or empty DB)
+  // We can just render nothing or an empty list.
 
   const x = useTransform(scrollYProgress, [0, 1], [0, -100])
 
   const itemWidth = 320
-  const totalWidth = collections.length * (itemWidth + 32) - 32
+  const totalWidth = displayCollections.length * (itemWidth + 32) - 32
   const containerWidth = typeof window !== "undefined" ? window.innerWidth : 1200
   const maxDrag = Math.max(0, totalWidth - containerWidth + 48)
+
+  if (displayCollections.length === 0) {
+    return <section ref={containerRef} className="hidden" />
+  }
 
   return (
     <section ref={containerRef} className="py-20 lg:py-32 overflow-hidden bg-white">
@@ -82,7 +61,7 @@ export function CollectionStrip() {
           dragConstraints={{ left: -maxDrag, right: 0 }}
           dragElastic={0.1}
         >
-          {collections.map((collection, index) => (
+          {displayCollections.map((collection, index) => (
             <motion.div
               key={collection.id}
               className="flex-shrink-0 w-80 group cursor-pointer"

@@ -11,7 +11,8 @@ interface ProductCardProps {
     name: string
     price: string
     image: string
-    badge?: "New" | "Back in stock" | "Limited" | "Bestseller" | "Popular" | "Premium" | "Traditional"
+    badge?: string
+    badgeColor?: string
     materials: string[]
     swatches: { name: string; color: string }[]
     quickLookImages: string[]
@@ -35,15 +36,17 @@ export function ProductCard({ product }: { product: any }) {
         <div className="absolute top-4 left-4 z-20">
           <span
             className={cn(
-              "px-3 py-1 text-xs font-semibold rounded-full backdrop-blur-md shadow-sm ring-1 ring-white/20",
-              product.badge === "New" && "bg-emerald-500/90 text-white",
-              product.badge === "Back in stock" && "bg-blue-500/90 text-white",
-              product.badge === "Limited" && "bg-amber-500/90 text-white",
-              product.badge === "Bestseller" && "bg-purple-500/90 text-white",
-              product.badge === "Popular" && "bg-rose-500/90 text-white",
-              product.badge === "Premium" && "bg-slate-800/90 text-white",
-              product.badge === "Traditional" && "bg-orange-500/90 text-white"
+              "px-3 py-1 text-xs font-semibold rounded-full backdrop-blur-md shadow-sm ring-1 ring-white/20 text-white",
+              !product.badgeColor && product.badge === "New" && "bg-emerald-500/90",
+              !product.badgeColor && product.badge === "Back in stock" && "bg-blue-500/90",
+              !product.badgeColor && product.badge === "Limited" && "bg-amber-500/90",
+              !product.badgeColor && product.badge === "Bestseller" && "bg-purple-500/90",
+              !product.badgeColor && product.badge === "Popular" && "bg-rose-500/90",
+              !product.badgeColor && product.badge === "Premium" && "bg-slate-800/90",
+              !product.badgeColor && product.badge === "Traditional" && "bg-orange-500/90",
+              !product.badgeColor && !["New", "Back in stock", "Limited", "Bestseller", "Popular", "Premium", "Traditional"].includes(product.badge) && "bg-gray-800/90"
             )}
+            style={product.badgeColor ? { backgroundColor: product.badgeColor } : undefined}
           >
             {product.badge}
           </span>

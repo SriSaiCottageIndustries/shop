@@ -40,7 +40,10 @@ export function BillingView({ onBack }: BillingViewProps) {
             setSelectedProductForVariant(product)
             const initialOptions: Record<string, string> = {}
             product.variants.forEach((v: any) => {
-                if (v.options.length > 0) initialOptions[v.type] = v.options[0]
+                if (v.options.length > 0) {
+                    const opt = v.options[0]
+                    initialOptions[v.type] = typeof opt === 'string' ? opt : opt.label
+                }
             })
             setSelectedOptions(initialOptions)
         } else {
@@ -49,6 +52,19 @@ export function BillingView({ onBack }: BillingViewProps) {
     }
 
     const addToCart = (product: any, variants?: Record<string, string>) => {
+        let calculatedPrice = product.price
+        if (variants && product.variants) {
+            Object.entries(variants).forEach(([vType, vLabel]) => {
+                const variant = product.variants.find((v: any) => v.type === vType)
+                if (variant) {
+                    const option = variant.options.find((o: any) => (typeof o === 'string' ? o : o.label) === vLabel)
+                    if (option && typeof option !== 'string' && option.price) {
+                        calculatedPrice = option.price
+                    }
+                }
+            })
+        }
+
         const variantKey = variants ? Object.values(variants).join("-") : ""
         const itemId = variants ? `${product.id}-${variantKey}` : product.id
         const existing = cart.find(item => item.cartId === itemId)
@@ -61,7 +77,7 @@ export function BillingView({ onBack }: BillingViewProps) {
                 cartId: itemId,
                 selectedVariants: variants,
                 quantity: 1,
-                customPrice: product.price
+                customPrice: calculatedPrice
             }])
         }
     }
@@ -159,15 +175,25 @@ export function BillingView({ onBack }: BillingViewProps) {
                                     <div key={idx}>
                                         <label className="block text-sm font-bold text-gray-700 mb-1">{v.type}</label>
                                         <div className="flex flex-wrap gap-2">
-                                            {v.options.map((opt: string) => (
-                                                <button
-                                                    key={opt}
-                                                    onClick={() => setSelectedOptions(prev => ({ ...prev, [v.type]: opt }))}
-                                                    className={`px-3 py-1 rounded border text-sm ${selectedOptions[v.type] === opt ? 'bg-[#2C1810] text-white border-[#2C1810]' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
-                                                >
-                                                    {opt}
-                                                </button>
-                                            ))}
+                                            {v.options.map((opt: any) => {
+                                                const label = typeof opt === 'string' ? opt : opt.label
+                                                const price = typeof opt !== 'string' && opt.price ? opt.price : null
+                                                const isSelected = selectedOptions[v.type] === label
+                                                return (
+                                                    <button
+                                                        key={label}
+                                                        onClick={() => setSelectedOptions(prev => ({ ...prev, [v.type]: label }))}
+                                                        className={`px-3 py-1.5 rounded border text-sm flex flex-col items-center min-w-[60px] transition-colors ${isSelected ? 'bg-[#2C1810] text-white border-[#2C1810]' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
+                                                    >
+                                                        <span className="font-medium">{label}</span>
+                                                        {price && (
+                                                            <span className={`text-[10px] font-bold ${isSelected ? 'text-[#FF9933]' : 'text-green-600'}`}>
+                                                                ₹{price}
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                )
+                                            })}
                                         </div>
                                     </div>
                                 ))}
@@ -288,27 +314,32 @@ export function BillingView({ onBack }: BillingViewProps) {
                                                 ))}
                                             </div>
                                         )}
-                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                            <div className="flex items-center border rounded bg-white">
-                                                <button
-                                                    onClick={() => updateCartItem(item.cartId, 'quantity', Math.max(1, item.quantity - 1))}
-                                                    className="px-2 py-0.5 hover:bg-gray-100 text-gray-600"
-                                                >-</button>
-                                                <span className="px-2 text-xs font-bold w-6 text-center">{item.quantity}</span>
-                                                <button
-                                                    onClick={() => updateCartItem(item.cartId, 'quantity', item.quantity + 1)}
-                                                    className="px-2 py-0.5 hover:bg-gray-100 text-gray-600"
-                                                >+</button>
+                                        <div className="flex items-start gap-4 mt-2">
+                                            <div>
+                                                <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Qty</span>
+                                                <div className="flex items-center border rounded bg-white shadow-sm">
+                                                    <button
+                                                        onClick={() => updateCartItem(item.cartId, 'quantity', Math.max(1, item.quantity - 1))}
+                                                        className="px-2 py-1 hover:bg-gray-100 text-gray-600 border-r transition-colors"
+                                                    >-</button>
+                                                    <span className="px-2 text-xs font-bold w-8 text-center">{item.quantity}</span>
+                                                    <button
+                                                        onClick={() => updateCartItem(item.cartId, 'quantity', item.quantity + 1)}
+                                                        className="px-2 py-1 hover:bg-gray-100 text-gray-600 border-l transition-colors"
+                                                    >+</button>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-1 text-sm text-gray-500">
-                                                <span>x</span>
-                                                <span>₹</span>
-                                                <input
-                                                    type="number"
-                                                    className="w-16 p-0.5 border-b border-gray-300 focus:border-[#FF9933] outline-none bg-transparent text-[#2C1810] font-bold"
-                                                    value={item.customPrice || item.price}
-                                                    onChange={(e) => updateCartItem(item.cartId, 'customPrice', parseFloat(e.target.value) || 0)}
-                                                />
+                                            <div>
+                                                <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Price</span>
+                                                <div className="flex items-center border rounded bg-white px-2 py-1 shadow-sm">
+                                                    <span className="text-gray-400 text-xs mr-1">₹</span>
+                                                    <input
+                                                        type="number"
+                                                        className="w-16 outline-none bg-transparent text-[#2C1810] font-bold text-sm"
+                                                        value={item.customPrice || item.price}
+                                                        onChange={(e) => updateCartItem(item.cartId, 'customPrice', parseFloat(e.target.value) || 0)}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

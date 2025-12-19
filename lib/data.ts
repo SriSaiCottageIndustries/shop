@@ -1,3 +1,8 @@
+export interface VariantOption {
+    label: string
+    price?: string
+}
+
 export interface Product {
     id: string
     name: string
@@ -8,7 +13,7 @@ export interface Product {
     tagline?: string
     description?: string // Made optional to match shop-context
     category: string
-    variants?: { type: string, options: string[] }[]
+    variants?: { type: string, options: (string | VariantOption)[] }[]
     swatches?: { name: string; color: string }[]
 }
 
@@ -27,6 +32,15 @@ export const initialProducts: Product[] = [
         category: "Idols",
         tagline: "Divine blessings for your home",
         description: "About this item\nBring home prosperity and good luck with this beautifully handcrafted Brass Ganesha Idol. Perfect for your home altar or as a thoughtful gift.\n\nMaterial: Pure Brass\nDimensions: H: 15cm × W: 10cm\nWeight: 1.2 kg\n\nCare Instructions: Clean with a soft, dry cloth. Avoid using harsh chemicals.\nHandcrafted by skilled artisans in India, ensuring authentic traditional design.",
+        variants: [
+            {
+                type: "Size",
+                options: [
+                    { label: "Medium (15cm)", price: "2499" },
+                    { label: "Large (25cm)", price: "4499" }
+                ]
+            }
+        ],
         swatches: [
             { name: "Antique Brass", color: "#B8860B" },
             { name: "Polished Brass", color: "#DAA520" }

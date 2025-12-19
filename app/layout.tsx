@@ -5,6 +5,7 @@ import "./globals.css"
 import { CartProvider } from "@/lib/cart-context"
 import { ShopProvider } from "@/lib/shop-context"
 import { Toaster } from "sonner"
+import { ChatWidget } from "@/components/chat-widget"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -29,6 +30,7 @@ export default function RootLayout({
         <ShopProvider>
           <CartProvider>
             {children}
+            <ChatWidget />
             <Toaster />
           </CartProvider>
         </ShopProvider>
